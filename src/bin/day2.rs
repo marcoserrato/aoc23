@@ -34,11 +34,9 @@ fn part1() {
             });
             acc && valid
         });
+
         if valid_game {
-            println!("Valid: {}", line);
             count = count + game_id;
-        } else {
-            println!("Invalid: {}", line)
         }
     }
     println!("Part 1: {}", count);
