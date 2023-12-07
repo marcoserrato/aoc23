@@ -89,44 +89,42 @@ fn part2() {
             maps.insert(current_name, Vec::new());
         }
     }
-    let seeds_text = lines.first().unwrap();
+    let seeds_text = lines.first().unwrap().clone();
     let seed_row_re = Regex::new(r"(\d+ \d+)").unwrap();
 
-    let mut children = vec![];
 
-    for (_, [seed_text]) in seed_row_re.captures_iter(seeds_text).map(|num| num.extract()) {
-        let mmaps = maps.clone();
-        children.push(thread::spawn(move || {
-            let seed_range : Vec<i64> = seed_text.split(" ").collect::<Vec<&str>>().iter_mut().map(|g| g.parse::<i64>().unwrap()).collect();
-            let seed_start = seed_range[0];
-            let seed_end = seed_range[0] + seed_start;
+    thread::scope(|s| {
+        let mut children = vec![];
+        for (_, [seed_text]) in seed_row_re.captures_iter(seeds_text).map(|num| num.extract()) {
+            children.push(s.spawn(|| {
+                let seed_range : Vec<i64> = seed_text.split(" ").collect::<Vec<&str>>().iter_mut().map(|g| g.parse::<i64>().unwrap()).collect();
+                let seed_start = seed_range[0];
+                let seed_end = seed_range[1] + seed_start;
+                let mut results : Vec<i64> = Vec::new();
 
-            let mut results : Vec<i64> = Vec::new();
-
-            for seed in seed_start..seed_end {
-                let mut m = 1;
-                let mut me = seed;
-                while m <= current_name {
-                    let map = mmaps.get(&m).unwrap();
-                    for thi in map {
-                        let e = *thi.get(0).unwrap();
-                        let s = *thi.get(1).unwrap();
-                        let i = *thi.get(2).unwrap();
-                        if me >= s && me < s + i {
-                            me = e + (me - s);
-                            break;
+                for seed in seed_start..seed_end  {
+                    let mut m = 1;
+                    let mut me = seed;
+                    while m <= current_name {
+                        let map = maps.get(&m).unwrap();
+                        for thi in map {
+                            let e = *thi.get(0).unwrap();
+                            let s = *thi.get(1).unwrap();
+                            let i = *thi.get(2).unwrap();
+                            if me >= s && me < s + i {
+                                me = e + (me - s);
+                                break;
+                            }
                         }
+                        m = m + 1;
                     }
-                    m = m + 1;
+                    results.push(me);
                 }
-                results.push(me);
-            }
-
-            results.iter().min().unwrap();
-        }));
-    }
-
-    let _min = children.into_iter().map(|child| {
-        child.join().unwrap()
+                let lowest = results.iter().min().unwrap();
+                lowest.clone()
+            }));
+        }
+        let values = children.into_iter().map(|v| v.join().unwrap());
+        println!("Part 2: {}", values.collect::<Vec<i64>>().iter().min().unwrap());
     });
 }
